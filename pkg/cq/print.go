@@ -100,56 +100,9 @@ func printTag(indent int, r io.Reader, content []byte, tag uint64, prefix string
 		return printDateTime(indent, r)
 	case 18:
 		desc += ": cose-sign1"
-		println(indent, content, 0, desc)
-		return printCOSESign1(indent, r)
-	default:
-		println(indent, content, 0, desc)
-		return print(indent, r, 0, "")
 	}
-}
-
-func printCOSESign1(indent int, r io.Reader) error {
-	_, _, content, err := readHeader(r)
-	if err != nil {
-		return err
-	}
-	if !bytes.Equal(content, []byte{0x84}) {
-		return fmt.Errorf("invalid COSE Sign1 object: %v", content)
-	}
-	desc := "COSE_Sign1 object: Array of length 4"
 	println(indent, content, 0, desc)
-	indent++
-
-	// protected header
-	majorType, count, content, err := readHeader(r)
-	if err != nil {
-		return err
-	}
-	if majorType != 2 {
-		return fmt.Errorf("invalid protected header: %v", content)
-	}
-	desc = fmt.Sprintf("protected: Binary string: %d bytes", count)
-	println(indent, content, 0, desc)
-	if err := print(indent+1, r, 0, ""); err != nil {
-		return err
-	}
-
-	// unprotected header
-	if err := print(indent, r, 0, "unprotected: "); err != nil {
-		return err
-	}
-
-	// payload
-	if err := print(indent, r, 0, "payload: "); err != nil {
-		return err
-	}
-
-	// signature
-	if err := print(indent, r, 0, "signature: "); err != nil {
-		return err
-	}
-
-	return nil
+	return print(indent, r, 0, "")
 }
 
 func printDateTime(indent int, r io.Reader) error {
