@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/shizhMSFT/cq/internal/version"
+	"github.com/shizhMSFT/cq/pkg/cose"
 	"github.com/shizhMSFT/cq/pkg/cq"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/term"
@@ -13,9 +14,16 @@ import (
 
 func main() {
 	app := &cli.App{
-		Name:    "cq",
-		Usage:   "Command-line CBOR processor",
-		Version: version.GetVersion(),
+		Name:      "cq",
+		Usage:     "Command-line CBOR processor",
+		UsageText: "cq [options] [file]",
+		Version:   version.GetVersion(),
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:  "cose-payload",
+				Usage: "decode the payload of a COSE message",
+			},
+		},
 		Action: func(c *cli.Context) error {
 			// Determine the input source
 			var source io.Reader
@@ -35,6 +43,14 @@ func main() {
 			}
 
 			// Print the CBOR data
+			if c.Bool("cose-payload") {
+				payload, err := cose.ExtractPayload(source)
+				if err != nil {
+					return err
+				}
+				_, err = os.Stdout.Write(payload)
+				return err
+			}
 			return cq.Print(source)
 		},
 		HideHelpCommand: true,

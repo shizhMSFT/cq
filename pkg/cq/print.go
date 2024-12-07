@@ -2,11 +2,12 @@ package cq
 
 import (
 	"bytes"
-	"encoding/binary"
 	"fmt"
 	"io"
 	"strings"
 	"time"
+
+	"github.com/shizhMSFT/cq/internal/cbor"
 )
 
 func Print(r io.Reader) error {
@@ -18,7 +19,7 @@ func PrintBytes(c []byte) error {
 }
 
 func print(indent int, r io.Reader, width int, prefix string) error {
-	majorType, count, content, err := readHeader(r)
+	majorType, count, content, err := cbor.ReadHeader(r)
 	if err != nil {
 		return err
 	}
@@ -106,7 +107,7 @@ func printTag(indent int, r io.Reader, content []byte, tag uint64, prefix string
 }
 
 func printDateTime(indent int, r io.Reader) error {
-	majorType, count, content, err := readHeader(r)
+	majorType, count, content, err := cbor.ReadHeader(r)
 	if err != nil {
 		return err
 	}
@@ -118,50 +119,6 @@ func printDateTime(indent int, r io.Reader) error {
 	desc := fmt.Sprintf("UNIX epoch: %d -> %s", count, t.Format(time.RFC3339))
 	println(indent, content, 0, desc)
 	return nil
-}
-
-func readHeader(r io.Reader) (byte, uint64, []byte, error) {
-	contentBuffer := bytes.NewBuffer(nil)
-	r = io.TeeReader(r, contentBuffer)
-
-	var header [1]byte
-	if _, err := io.ReadFull(r, header[:]); err != nil {
-		return 0, 0, nil, err
-	}
-
-	majorType := header[0] >> 5
-	count := uint64(header[0] & 0x1f)
-	if count > 27 {
-		return 0, 0, nil, fmt.Errorf("invalid count: %d", count)
-	}
-	switch count {
-	case 24:
-		var counts [1]byte
-		if _, err := io.ReadFull(r, counts[:]); err != nil {
-			return 0, 0, nil, err
-		}
-		count = uint64(counts[0])
-	case 25:
-		var counts [2]byte
-		if _, err := io.ReadFull(r, counts[:]); err != nil {
-			return 0, 0, nil, err
-		}
-		count = uint64(binary.BigEndian.Uint16(counts[:]))
-	case 26:
-		var counts [4]byte
-		if _, err := io.ReadFull(r, counts[:]); err != nil {
-			return 0, 0, nil, err
-		}
-		count = uint64(binary.BigEndian.Uint32(counts[:]))
-	case 27:
-		var counts [8]byte
-		if _, err := io.ReadFull(r, counts[:]); err != nil {
-			return 0, 0, nil, err
-		}
-		count = binary.BigEndian.Uint64(counts[:])
-	}
-
-	return majorType, count, contentBuffer.Bytes(), nil
 }
 
 func println(indent int, content []byte, width int, description string) {
