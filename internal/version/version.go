@@ -2,7 +2,7 @@ package version
 
 var (
 	// Version shows the current cq version, optionally with pre-release.
-	Version = "v0.1.0"
+	Version = "v0.2.0"
 
 	// BuildMetadata stores the build metadata.
 	BuildMetadata = "unreleased"
